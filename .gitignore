@@ -1,0 +1,11 @@
+# environment
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+
+# supplied dataset and local working copies (verify with supplied.sha256)
+supplied/data/raw.sql
+*.zip
+*.sqlite
+*.sqlite-journal
