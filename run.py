@@ -6,7 +6,6 @@ from nbclient import NotebookClient
 
 ROOT = Path(__file__).resolve().parent
 DB = ROOT / "data" / "marketplace.sqlite"
-STEPS = ["01_load"]
 
 # supplied files must be unchanged
 for line in (ROOT / "supplied.sha256").read_text().splitlines():
@@ -25,10 +24,9 @@ print(f"00_setup_db  {time.perf_counter() - t:.1f} s  peak {peak:.0f} MB  db {DB
 # kernel lives inside .venv so notebooks always run on this project's env
 subprocess.run([sys.executable, "-m", "ipykernel", "install", "--sys-prefix", "--name", "eng2040-a1"], check=True, capture_output=True)
 
-for step in STEPS:
-    path = ROOT / "notebooks" / f"{step}.ipynb"
-    nb = nbformat.read(path, as_version=4)
-    t = time.perf_counter()
-    NotebookClient(nb, timeout=1800, kernel_name="eng2040-a1", resources={"metadata": {"path": str(path.parent)}}).execute()
-    nbformat.write(nb, path)
-    print(f"{step}  {time.perf_counter() - t:.1f} s (incl kernel start)")
+path = ROOT / "pipeline.ipynb"
+nb = nbformat.read(path, as_version=4)
+t = time.perf_counter()
+NotebookClient(nb, timeout=1800, kernel_name="eng2040-a1", resources={"metadata": {"path": str(ROOT)}}).execute()
+nbformat.write(nb, path)
+print(f"pipeline.ipynb  {time.perf_counter() - t:.1f} s (incl kernel start), per step numbers in data/<step>/resources.json")
