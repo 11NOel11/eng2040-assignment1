@@ -27,5 +27,7 @@ there from the course package first.
 | | | | `02_clean/items_clean.parquet` | one order item |
 | | | | `02_clean/changes.parquet` | one changed value (old, new, rule) |
 | | | | `02_clean/cleaning_summary.csv`, `record_accounting.csv`, `fix_evidence.csv`, `payment_reconciliation.csv`, `profile.csv`, `resources.json` | one rule / one outcome / one problem / one check / one issue / step resources |
+| 3 eda | `pipeline.ipynb` step 3 | `02_clean/orders_clean.parquet` | `03_eda/q1_*.csv`, `q2_*.csv`, `q3_*.csv` + `.png` | one chart bar / group (the data behind each chart) |
+| | | | `03_eda/sensitivity.csv` | one inclusion choice |
 
 Load a parquet output with `pd.read_parquet(path, dtype_backend="pyarrow")`.
