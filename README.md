@@ -22,6 +22,6 @@ there from the course package first.
 | 0 setup | `supplied/setup_db.py` | `supplied/data/raw.sql` | `marketplace.sqlite` | as in the raw tables |
 | 1 load | `pipeline.ipynb` step 1 | `marketplace.sqlite` | `01_load/orders.parquet` | one order |
 | | | | `01_load/items.parquet` | one order item |
-| | | | `01_load/checks.csv`, `key_links.csv`, `load_comparison.csv`, `resources.json` | one check / one key link / one approach / step resources |
+| | | | `01_load/checks.csv`, `key_links.csv`, `load_comparison.csv` (+ `_raw`), `resources.json` | one check / one key link / one scale x driver x approach / step resources |
 
 Load a parquet output with `pd.read_parquet(path, dtype_backend="pyarrow")`.

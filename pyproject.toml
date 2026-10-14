@@ -3,6 +3,7 @@ name = "eng2040-assignment1"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "adbc-driver-sqlite>=1.12.0",
     "ipykernel>=7.4.0",
     "matplotlib>=3.11.2",
     "nbclient>=0.11.0",
