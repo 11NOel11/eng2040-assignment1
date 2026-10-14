@@ -23,5 +23,9 @@ there from the course package first.
 | 1 load | `pipeline.ipynb` step 1 | `marketplace.sqlite` | `01_load/orders.parquet` | one order |
 | | | | `01_load/items.parquet` | one order item |
 | | | | `01_load/checks.csv`, `key_links.csv`, `load_comparison.csv` (+ `_raw`), `resources.json` | one check / one key link / one scale x driver x approach / step resources |
+| 2 clean | `pipeline.ipynb` step 2 | `01_load/*.parquet`, db payments + translation | `02_clean/orders_clean.parquet` | one order (all 20000, label or reason) |
+| | | | `02_clean/items_clean.parquet` | one order item |
+| | | | `02_clean/changes.parquet` | one changed value (old, new, rule) |
+| | | | `02_clean/cleaning_summary.csv`, `record_accounting.csv`, `fix_evidence.csv`, `payment_reconciliation.csv`, `profile.csv`, `resources.json` | one rule / one outcome / one problem / one check / one issue / step resources |
 
 Load a parquet output with `pd.read_parquet(path, dtype_backend="pyarrow")`.
