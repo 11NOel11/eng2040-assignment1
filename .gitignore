@@ -9,3 +9,6 @@ supplied/data/raw.sql
 *.zip
 *.sqlite
 *.sqlite-journal
+
+# pipeline outputs, rebuilt by run.py
+data/

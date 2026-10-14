@@ -3,13 +3,14 @@ name = "eng2040-assignment1"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "ipykernel>=7.4.0",
     "matplotlib>=3.11.2",
+    "nbclient>=0.11.0",
+    "nbformat>=5.11.1",
     "pandas>=3.0.6",
     "psutil>=7.2.2",
     "pyarrow>=26.0.0",
 ]
 
 [dependency-groups]
-dev = [
-    "ipykernel>=7.4.0",
-]
+dev = []
