@@ -219,7 +219,7 @@ category & most expensive item, top 15 + other + missing & 17 \\
   \item \textbf{Representation.} Sums per order, set to missing if a part is missing. Missing stays NaN with a flag; imputing here would use future test orders. Cyclic time as sin + cos, so December sits next to January; no year. Rare categories grouped as ``other''.
   \item \textbf{Kept.} Two copies dropped: \file{est\_days\_from\_purchase} (= lead days + approval hours / 24) and \file{n\_categories} (= not category missing). The highest remaining correlation is 0.78 (weight vs volume). Each feature's meaning and source columns: \file{feature\_descriptions.csv}.
   \item \textbf{No leakage.} No source column is forbidden (checked in code). Each feature alone scores an AUC of 0.43--0.61, while the outcome \file{days\_late} as a control gets 1.0.
-  \item \textbf{Reliability.} A check model, run after step 4's resource numbers: a gradient-boosted tree~\cite{sklearn} trained on orders before April 2018 and tested on later ones scores a test AUC of 0.588. Lead time alone scores 0.534, and the leak control 1.000: modest signal, no leak. It is also noisy: rounding two columns to 10 decimals moved it by 0.02. Lateness comes in waves a model of the past cannot foresee.
+  \item \textbf{Reliability.} A check model, run after step 4's resource numbers: a gradient-boosted tree~\cite{sklearn} trained on all orders before a cutoff and tested on the months after, at three cutoffs (February, April, June 2018). All features score 0.58--0.62 every time, each 95\% bootstrap interval above 0.5. Lead time alone scores 0.45--0.53, and the leak control 1.0. Modest but real signal, and no leak.
 \end{itemize}
 
 %------------------------------------------------------------------

@@ -63,7 +63,7 @@ python3.12 -m venv .venv
 | 4 features | `02_clean/*_clean.parquet` | `04_features/features.parquet` | one labelled order, numbers only (no id, no label) |
 | | | `04_features/ids_labels.parquet` | same row order: `order_id`, `delivered_after_estimate` |
 | | | `04_features/feature_descriptions.csv`, `leakage_check.csv` | one feature |
-| | | `04_features/baseline_model.csv` | one check model (time split test auc) |
+| | | `04_features/baseline_model.csv` | one cutoff x model: test auc and its 95% interval |
 | 5 resources | `data/0*/resources.json` | `05_resources/resources_summary.csv`, `environment.json`, `executed_sql.sql` | one step / one setting / one query |
 | check | all outputs | `manifest.sha256` | one output file and its hash |
 
@@ -136,4 +136,4 @@ Every question in the brief and every "Excellent" line of the rubric, and where 
 | Wilson intervals | normal approximation | stays valid for small states (0 of 8) | step 3 intro |
 | rank states by excess late orders | late rate | counts the late deliveries a state adds, small states do not dominate | `03_eda/q3_late_by_state.csv` |
 | missing stays NaN + flag, no imputation | median fill | a fill computed now would use test orders | step 4 intro |
-| time split check model | random split | a model learns from the past and predicts the future | `04_features/baseline_model.csv` |
+| time split check model, 3 cutoffs, bootstrap intervals | one random split | a model learns from the past and predicts the future, one split alone is noisy | `04_features/baseline_model.csv` |
