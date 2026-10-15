@@ -5,7 +5,7 @@ Task brief: `supplied/assignment_01_brief.pdf`.
 ## Reproduce everything
 
 Requires [uv](https://docs.astral.sh/uv/). The environment is pinned in `uv.lock` (Python 3.12).
-`supplied/data/raw.sql` is not committed; put it there from the course package first.
+`supplied/data/raw.sql` is not committed. Copy it in from the course package first (`mkdir -p supplied/data`); `run.py` stops if its sha256 differs.
 
 ```sh
 uv run python run.py          # everything, about 4 min
