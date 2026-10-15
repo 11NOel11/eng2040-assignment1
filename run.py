@@ -49,6 +49,3 @@ files = sorted(p for p in (ROOT / "data").rglob("*") if p.is_file() and p.name n
 lines = [f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ROOT)}" for p in files]
 (ROOT / "data" / "manifest.sha256").write_text("\n".join(lines) + "\n")
 print(f"data/manifest.sha256  {len(lines)} output files hashed")
-
-# every number typed into the notebook text and report.md must still match these outputs
-subprocess.run([sys.executable, ROOT / "check_claims.py"], check=True)

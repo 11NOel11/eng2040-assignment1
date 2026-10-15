@@ -1,5 +1,5 @@
-"""Step 1 engine comparison: same one-row-per-order table, seven ways, at 1x/3x/10x data.
-uv run python bench.py   (about 5 min, run.py calls it, writes data/01_load/bench*.csv)"""
+"""Step 1 engine comparison: same one-row-per-order table, eight ways, at 1x/3x/10x data.
+uv run python bench.py   (about 6 min, run.py calls it, writes data/01_load/bench*.csv)"""
 import shutil, sqlite3, subprocess, sys
 from pathlib import Path
 import pandas as pd
@@ -34,6 +34,7 @@ HEAD = "import resource, sys, time\nimport pandas as pd\n"
 CONNECT = {
     "adbc": "import adbc_driver_sqlite.dbapi as adbc\ncon = adbc.connect('file:' + sys.argv[1] + '?mode=ro')\n",
     "duckdb": "import duckdb\ncon = duckdb.connect()\ncon.execute('load sqlite')\n",
+    "polars": "import polars as pl\n",
     "sqlite3": "import sqlite3\ncon = sqlite3.connect('file:' + sys.argv[1] + '?mode=ro', uri=True)\n",
 }
 RUNS = {
@@ -58,6 +59,10 @@ df = con.sql(open(sys.argv[3]).read()).arrow().read_all().to_pandas(types_mapper
 """),
 }
 RUNS["duckdb sql on parquet, 1 thread"] = ("duckdb", "con.execute('set threads=1')\n" + RUNS["duckdb sql on parquet"][1])
+# polars runs the same sql lazily on the parquet copies with its streaming engine (lab 7)
+RUNS["polars sql on parquet, streaming"] = ("polars", """ctx = pl.SQLContext({tb: pl.scan_parquet(f"{sys.argv[2]}/{tb}.parquet") for tb in ["orders", "customers", "order_items", "order_payments", "order_reviews"]})
+df = ctx.execute(open(sys.argv[3]).read()).collect(engine="streaming").to_pandas(use_pyarrow_extension_array=True)
+""")
 # result written straight to a parquet file instead of into python
 RUNS["duckdb sql on parquet, streamed to a file"] = ("duckdb", RUNS["duckdb sql on parquet"][1].split("df =")[0] + """con.execute(f"copy ({open(sys.argv[3]).read().rstrip().rstrip(';')}) to '{sys.argv[2]}/out.parquet'")
 df = range(con.sql(f"select count(*) from '{sys.argv[2]}/out.parquet'").fetchone()[0])
