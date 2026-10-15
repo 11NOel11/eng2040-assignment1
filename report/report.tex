@@ -29,6 +29,24 @@
   \item 16,482 $\times$ 72 numeric features, only from what is known at approval. Leakage checks pass.
   \item A value is fixed only when an independent record (a \emph{witness}) shows the true value. Otherwise it becomes missing.
 \end{itemize}
+\textbf{Key decisions.}
+\begin{center}\small
+\begin{tabular}{lll}
+\toprule
+decision & instead of & because \\
+\midrule
+SQL in SQLite via ADBC & pandas, DuckDB, Polars & least memory at every scale (\S1) \\
+Parquet with zstd & CSV, snappy, gzip & smallest at the same speed, keeps types (\S1) \\
+fix only with a witness & guessing or dropping & fixes match payments like clean orders (\S2) \\
+keep every order, give a reason & dropping unusable orders & every record counted (\S2, \S3) \\
+Wilson intervals & textbook $p \pm 1.96\,$se & valid for small states, e.g.\ 0 of 8 (\S3) \\
+rank by excess late orders & by late rate & small states cannot dominate (\S3) \\
+missing as NaN + flag & filling with a median & a fill now would use future test orders (\S4) \\
+time-split check model & random split & learn from the past, predict the future (\S4) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
 Data: Olist extract, modified for the course~\cite{olist}. Code: \file{pipeline.ipynb}, \file{sql/}, \file{bench.py}, \file{run.py}. The README maps each step to its inputs, outputs and row meaning, and each brief question to where it is answered.
 
 %------------------------------------------------------------------
@@ -201,15 +219,22 @@ category & most expensive item, top 15 + other + missing & 17 \\
   \item \textbf{Representation.} Sums per order, set to missing if a part is missing. Missing stays NaN with a flag; imputing here would use future test orders. Cyclic time as sin + cos, so December sits next to January; no year. Rare categories grouped as ``other''.
   \item \textbf{Kept.} Two copies dropped: \file{est\_days\_from\_purchase} (= lead days + approval hours / 24) and \file{n\_categories} (= not category missing). The highest remaining correlation is 0.78 (weight vs volume). Each feature's meaning and source columns: \file{feature\_descriptions.csv}.
   \item \textbf{No leakage.} No source column is forbidden (checked in code). Each feature alone scores an AUC of 0.43--0.61, while the outcome \file{days\_late} as a control gets 1.0.
-  \item \textbf{Reliability.} A gradient-boosted tree~\cite{sklearn} trained on orders before April 2018 and tested on later ones scores a test AUC of 0.611. Lead time alone scores 0.534, and the leak control 1.000: modest signal, no leak. Lateness comes in waves a model of the past cannot foresee.
+  \item \textbf{Reliability.} A check model, run after step 4's resource numbers: a gradient-boosted tree~\cite{sklearn} trained on orders before April 2018 and tested on later ones scores a test AUC of 0.588. Lead time alone scores 0.534, and the leak control 1.000: modest signal, no leak. It is also noisy: rounding two columns to 10 decimals moved it by 0.02. Lateness comes in waves a model of the past cannot foresee.
 \end{itemize}
 
 %------------------------------------------------------------------
 \section{Reproducibility and resources}
 
-\textbf{One command, strict checks.} \file{run.py} (with uv, or pip and \file{requirements.txt}) stops unless: Python is 3.12; the supplied files match their SHA-256 hashes; \file{data/} is rebuilt from nothing; every notebook assert passes and every cell runs once with no error; and every output matches \file{expected.sha256} byte for byte. A fresh clone and a clean Linux container without uv both pass. Every SQL query run is saved to \file{executed\_sql.sql}. Environment: Python 3.12, pandas 3.0, pyarrow 26.
+\textbf{One command, strict checks.} \file{run.py} (with uv, or pip and \file{requirements.txt}) stops unless:
+\begin{enumerate}[leftmargin=1.5em]
+  \item Python is 3.12 and the supplied files match their SHA-256 hashes;
+  \item \file{data/} is rebuilt from nothing, so no earlier output survives;
+  \item every notebook assert passes, and every cell runs once, in order, with no error;
+  \item every output matches \file{expected.sha256} byte for byte.
+\end{enumerate}
+A fresh clone and a clean Linux container without uv both pass. Every SQL query run is saved to \file{executed\_sql.sql}. Environment: Python 3.12, pandas 3.0, pyarrow 26.
 
-\textbf{Estimated vs measured.} Memory is peak RSS above the step's start, sampled every 10 ms; it moves between runs, so the table shows the range over 10 runs. Estimates from each step's in-memory data: memory 2--3$\times$, plus the scikit-learn import for step 4 (88 MB, measured alone); zstd Parquet 0.2--0.35$\times$ of the tables written.
+\textbf{Estimated vs measured.} Memory is peak RSS above the step's start, sampled every 10 ms; it moves between runs, so the table shows the range over 5 runs. Estimates from each step's in-memory data: memory 2--3$\times$; zstd Parquet 0.2--0.35$\times$ of the tables written.
 
 \begin{center}\small
 \begin{tabular}{lrrrrrr}
@@ -218,16 +243,16 @@ category & most expensive item, top 15 + other + missing & 17 \\
 step & MB & estimate & measured & estimate & measured & seconds \\
 \midrule
 0 setup db & 18.3 & 33--52 & 205 & 18--27 & 24.4 & $<$ 5 \\
-1 load & 12.9 & 26--39 & 43--74 & 2.6--4.5 & 3.3 & 0.2--0.3 \\
-2 clean & 17.6 & 35--53 & 31--49 & 3.5--6.2 & 4.3 & 0.5--0.6 \\
-3 analysis & 21.4 & 43--64 & 45--65 & $<$ 1 & 0.25 & 1.7--2.2 \\
-4 features & 24.0 & 136--161 & 118--150 & 2.1--3.7 & 0.9 & 2.1--2.7 \\
+1 load & 12.9 & 26--39 & 69--73 & 2.6--4.5 & 3.3 & 0.2 \\
+2 clean & 17.6 & 35--53 & 40--47 & 3.5--6.2 & 4.3 & 0.5--0.6 \\
+3 analysis & 21.4 & 43--64 & 49--66 & $<$ 1 & 0.25 & 1.8--1.9 \\
+4 features & 24.0 & 48--72 & 40--57 & 2.1--3.7 & 0.9 & 0.2--0.3 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \begin{itemize}
-  \item Steps 2--4 land on their memory estimates. Step 1 can need up to twice its estimate, likely Arrow buffers held before pandas wraps them (not measured separately).
+  \item Steps 2--4 land on or near their memory estimates (no run more than 20\% outside). Step 1 needs about twice its estimate, likely Arrow buffers held before pandas wraps them (not measured separately).
   \item Saved storage lands inside the estimate for steps 0--2. Step 4 saved 0.9 MB against 2.1--3.7: one-hot zeros compress far better than the rule assumes. Temporary storage is 298 MB, only for the 10$\times$ engine comparison, then deleted.
   \item \textbf{Step 0 was the big miss} (205 vs 33--52 MB). The reviews contain emoji, and one character above U+FFFF makes Python store the whole 18-million-character text at 4 bytes per character (73 MB)~\cite{pep393}. Measured: reading as bytes peaks at 33 MB, decoding at 123 MB, and reading as text (what \file{setup\_db.py} does) at 196 MB. The loader is supplied, so it stays.
 \end{itemize}
