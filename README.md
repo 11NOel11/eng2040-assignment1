@@ -29,5 +29,15 @@ there from the course package first.
 | | | | `02_clean/cleaning_summary.csv`, `record_accounting.csv`, `fix_evidence.csv`, `payment_reconciliation.csv`, `profile.csv`, `resources.json` | one rule / one outcome / one problem / one check / one issue / step resources |
 | 3 eda | `pipeline.ipynb` step 3 | `02_clean/orders_clean.parquet` | `03_eda/q1_*.csv`, `q2_*.csv`, `q3_*.csv` + `.png` | one chart bar / group (the data behind each chart) |
 | | | | `03_eda/sensitivity.csv` | one inclusion choice |
+| | | | `03_eda/q1_late_by_month.*`, `q2_within_state_month.csv`, `late_rate_bounds.csv` | one month / one comparison / one bound |
+| 4 features | `pipeline.ipynb` step 4 | `02_clean/orders_clean.parquet`, `items_clean.parquet` | `04_features/features.parquet` | one labelled order, numbers only (no id, no label) |
+| | | | `04_features/ids_labels.parquet` | same row order: `order_id`, `delivered_after_estimate` |
+| | | | `04_features/feature_descriptions.csv`, `leakage_check.csv` | one feature |
+| 5 resources | `pipeline.ipynb` step 5 | `data/0*/resources.json` | `resources_summary.csv`, `environment.json` | one step / one setting |
+| check | `run.py` | all outputs | `manifest.sha256` | one output file and its hash |
+
+`features.parquet` and `ids_labels.parquet` line up row by row. Join them with
+`pd.concat([ids, feats], axis=1)` only when fitting a model. Two runs of `run.py` give the same
+`manifest.sha256`, so every output is reproduced byte for byte (timing files are left out of it).
 
 Load a parquet output with `pd.read_parquet(path, dtype_backend="pyarrow")`.

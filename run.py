@@ -30,3 +30,10 @@ t = time.perf_counter()
 NotebookClient(nb, timeout=1800, kernel_name="eng2040-a1", resources={"metadata": {"path": str(ROOT)}}).execute()
 nbformat.write(nb, path)
 print(f"pipeline.ipynb  {time.perf_counter() - t:.1f} s (incl kernel start), per step numbers in data/<step>/resources.json")
+
+# hash every output so two runs can be compared byte for byte. timing files always differ, so they are left out
+skip = {"resources.json", "load_comparison.csv", "load_comparison_raw.csv", "resources_summary.csv", "environment.json", "manifest.sha256"}
+files = sorted(p for p in (ROOT / "data").rglob("*") if p.is_file() and p.name not in skip and p.suffix != ".sqlite")
+lines = [f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ROOT)}" for p in files]
+(ROOT / "data" / "manifest.sha256").write_text("\n".join(lines) + "\n")
+print(f"data/manifest.sha256  {len(lines)} output files hashed")
