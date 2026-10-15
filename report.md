@@ -9,12 +9,13 @@ draft. bullets get turned into prose. target 6-8 pages. every number below comes
 - totals preserved (checks.csv): price 54,446,205.77, payments 280,524,473 centavos, 19,966 reviews, 22,662 items. all equal
 - query plan: each group by walks the order_id index, aggregates joined back by index lookup
 - engine comparison (bench.csv), 10x data, MB above baseline / seconds:
-  - sqlite sql via adbc 120 MB / 1.76 s  <- chosen
-  - pandas 417 MB / 0.67 s
-  - duckdb on parquet 469 MB / 0.12 s, 1 thread 298 MB / 0.21 s
-  - duckdb on the sqlite file 460 MB / 0.23 s
-- first estimate wrong: with python's sqlite3 driver sql and pandas grew the same. driver made a python object per value. adbc (arrow columns) fixed it
-- duckdb: 6-15x faster at 10x, but memory like pandas. streaming to parquet and a memory cap didnt help. nothing wins both -> memory over speed for a batch step
+  - sqlite sql via adbc 120 MB / 1.86 s  <- chosen
+  - sqlite sql via python's sqlite3 driver 421 MB / 3.97 s
+  - pandas 405 MB / 0.68 s
+  - duckdb on parquet 470 MB / 0.12 s, 1 thread 314 MB / 0.22 s, result written to a file 482 MB / 0.15 s
+  - duckdb on the sqlite file 457 MB / 0.25 s
+- first estimate wrong: with python's sqlite3 driver sql and pandas need the same. driver makes a python object per value (20 MB of objects vs 7 MB as a dataframe for 20,000 rows). adbc (arrow columns) fixed it
+- duckdb: 6-16x faster at 10x, but 310-480 MB, close to pandas. writing to a file didnt help, a memory cap made the query fail. nothing wins both -> memory over speed for a batch step
 - storage: parquet 3.29 MB vs csv 5.25 MB, keeps types
 
 ## 2. cleaning (~1.5 pages)
@@ -29,14 +30,14 @@ draft. bullets get turned into prose. target 6-8 pages. every number below comes
 - 7.23 extra on 832 orders: same payment types, states, months as all orders, never its own payment row -> left, cant bias comparisons
 - installments: 929 at -1 left (payments arent predictors), 1 at 0 is valid (brief)
 - payments reconcile 14,845 -> 16,302 of 18,122 complete orders. remaining 1,820: 919 negative payment, 832 the 7.23
-- unresolved: payments (not predictors), 270 carrier before approval (flag), not_reported + 7-day shift (tested in step 3)
+- unresolved: payments (not predictors), 270 carrier before approval (flag), 804 not_reported + 782 of the 791 early deliveries are exactly 7 days (tested in step 3)
 - extreme delays up to 188 days kept, 14 orders over 60 days, consistent dates
 
 ## 3. eda (~2 pages)
 
 - q1: 6.7% late (6.3-7.1%). median 7 days late (IQR 3-13), 1 in 8 is 3+ weeks. on-time orders median 13 days early. waves: mar 2018 18.3%, feb 2018 14.1%, nov 2017 12.0%
-- q2: <1 week 16.3% late, 1-5 weeks 5-8%, 6+ weeks 1.7%. not state or season: 0 short estimates in spike months, same state + month 16.3% vs 4.2%. association only
-- q3: ranked by excess late orders. RJ +98, BA +26, CE +22. RJ: 65 of it in spike months, 94 on SP sellers -> SP -> RJ at peak times. BA: 25 outside spikes, steady. RR (9 orders) and AP (8) too small. 27 states -> 1-2 look unusual by chance
+- q2: <1 week 16.3% late, 1-5 weeks 5-7%, 6+ weeks 1.7%. not state or season: 0 short estimates in spike months, same state + month 16.3% vs 4.2%. association only
+- q3: ranked by excess late orders. RJ +98, BA +26, CE +22. RJ: 65 of it in spike months, 94 on SP sellers -> SP -> RJ at peak times. BA: 25 outside spikes, steady. RR (9 orders) and AP (8) too small. 27 states -> 1-2 outside by chance, 12 are, so states really differ. 951 labelled orders (6%) have no state, 741 with no customer row
 - sensitivity: late rate 6.41-6.79%, top 3 always RJ BA CE
 - bounds: 944 cancelled -> 6.4% to 11.8%. 743 already with carrier -> 6.7% is a lower end
 
@@ -57,8 +58,9 @@ draft. bullets get turned into prose. target 6-8 pages. every number below comes
 
 - `uv run python run.py`: checksums, db rebuild, bench, notebook, manifest. `--fast` skips bench
 - two runs and a fresh clone give identical output hashes
-- per step (resources_summary.csv), MB above start / estimate / seconds: load 72 / 26-39 / 0.2, clean 66 / 35-53 / 0.6, eda 63 / 43-64 / 1.7, features 55 / 48-72 / 0.3. moves between runs (load 52-79 MB), read as sizes
-- step 0 (setup_db, own process): estimate 33-52 MB, measured ~205 MB peak, 2.2 s. emoji in reviews -> python stores the 18M-char text at 4 bytes/char (73 MB). by hand: bytes 33 MB, decode 123 MB, text read 196 MB. supplied loader, kept
+- per step (resources_summary.csv), MB above start / estimate / seconds: load 77 / 26-39 / 0.2, clean 68 / 35-53 / 0.6, eda 65 / 43-64 / 1.7, features 60 / 48-72 / 0.3. moves a little between runs, read as sizes
+- step 0 (setup_db, own process): estimate 33-52 MB, measured ~205 MB peak, under 3 s. emoji in reviews -> python stores the 18M-char text at 4 bytes/char (73 MB). by hand: bytes 33 MB, decode 123 MB, text read 196 MB. supplied loader, kept
+- storage estimate (parquet ~0.3-0.5x in-memory size): inside for steps 0-3, step 4 saved 1.2 MB vs 3.2-5.3 (one hot zeros compress well). runtime estimates all met
 - estimate rule (2-3x data) too low for steps reading the db, 4-6x fits. likely arrow buffers + allocator, not measured separately
 - storage: db 24.4 MB, saved outputs ~13 MB, temporary ~300 MB (10x db + parquet copy, deleted)
 - kernel peak 565 MB. python 3.12.12, pandas 3.0.6, pyarrow 26, duckdb 1.5.6, sklearn 1.9.1, macOS arm64, 14 cpu, 38.7 GB

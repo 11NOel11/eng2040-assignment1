@@ -1,5 +1,5 @@
-"""Step 1 engine comparison: same one-row-per-order table, five ways, at 1x/3x/10x data.
-uv run python bench.py   (about 3 min, run.py calls it, writes data/01_load/bench*.csv)"""
+"""Step 1 engine comparison: same one-row-per-order table, seven ways, at 1x/3x/10x data.
+uv run python bench.py   (about 5 min, run.py calls it, writes data/01_load/bench*.csv)"""
 import shutil, sqlite3, subprocess, sys
 from pathlib import Path
 import pandas as pd
@@ -34,6 +34,7 @@ HEAD = "import resource, sys, time\nimport pandas as pd\n"
 CONNECT = {
     "adbc": "import adbc_driver_sqlite.dbapi as adbc\ncon = adbc.connect('file:' + sys.argv[1] + '?mode=ro')\n",
     "duckdb": "import duckdb\ncon = duckdb.connect()\ncon.execute('load sqlite')\n",
+    "sqlite3": "import sqlite3\ncon = sqlite3.connect('file:' + sys.argv[1] + '?mode=ro', uri=True)\n",
 }
 RUNS = {
     "pandas (adbc reads whole tables)": ("adbc", """
@@ -47,6 +48,7 @@ rev = rv.groupby("order_id").size().rename("n_reviews")
 df = o.merge(c, on="customer_id", how="left").join(it, on="order_id").join(pay, on="order_id").join(rev, on="order_id")
 """),
     "sqlite sql (adbc)": ("adbc", "df = pd.read_sql(open(sys.argv[3]).read(), con, dtype_backend='pyarrow')\n"),
+    "sqlite sql (python sqlite3 driver)": ("sqlite3", "df = pd.read_sql(open(sys.argv[3]).read(), con)\n"),
     "duckdb sql on sqlite": ("duckdb", """con.execute(f"attach '{sys.argv[1]}' as db (type sqlite, read_only); use db")
 df = con.sql(open(sys.argv[3]).read()).arrow().read_all().to_pandas(types_mapper=pd.ArrowDtype)
 """),
@@ -56,6 +58,10 @@ df = con.sql(open(sys.argv[3]).read()).arrow().read_all().to_pandas(types_mapper
 """),
 }
 RUNS["duckdb sql on parquet, 1 thread"] = ("duckdb", "con.execute('set threads=1')\n" + RUNS["duckdb sql on parquet"][1])
+# result written straight to a parquet file instead of into python
+RUNS["duckdb sql on parquet, streamed to a file"] = ("duckdb", RUNS["duckdb sql on parquet"][1].split("df =")[0] + """con.execute(f"copy ({open(sys.argv[3]).read().rstrip().rstrip(';')}) to '{sys.argv[2]}/out.parquet'")
+df = range(con.sql(f"select count(*) from '{sys.argv[2]}/out.parquet'").fetchone()[0])
+""")
 TAIL = "\nprint(time.perf_counter() - t, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1e6 if sys.platform == 'darwin' else 1e3), len(df))\n"
 
 def run(driver, body, db, pq):

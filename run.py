@@ -27,7 +27,7 @@ res = {"step": "00_setup_db", "seconds": round(time.perf_counter() - t, 2), "rss
 (ROOT / "data" / "00_setup_db" / "resources.json").write_text(json.dumps(res, indent=1))
 print(res)
 
-# engine comparison for step 1, about 3 min. --fast reuses the last result
+# engine comparison for step 1, about 5 min. --fast reuses the last result
 if "--fast" not in sys.argv or not (ROOT / "data" / "01_load" / "bench.csv").exists():
     t = time.perf_counter()
     subprocess.run([sys.executable, ROOT / "bench.py"], check=True, stdout=subprocess.DEVNULL)
@@ -49,3 +49,6 @@ files = sorted(p for p in (ROOT / "data").rglob("*") if p.is_file() and p.name n
 lines = [f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ROOT)}" for p in files]
 (ROOT / "data" / "manifest.sha256").write_text("\n".join(lines) + "\n")
 print(f"data/manifest.sha256  {len(lines)} output files hashed")
+
+# every number typed into the notebook text and report.md must still match these outputs
+subprocess.run([sys.executable, ROOT / "check_claims.py"], check=True)
