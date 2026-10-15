@@ -1,4 +1,4 @@
-"""Step 1 engine comparison: same one-row-per-order table, four ways, at 1x/3x/10x data.
+"""Step 1 engine comparison: same one-row-per-order table, five ways, at 1x/3x/10x data.
 uv run python bench.py   (about 3 min, run.py calls it, writes data/01_load/bench*.csv)"""
 import shutil, sqlite3, subprocess, sys
 from pathlib import Path

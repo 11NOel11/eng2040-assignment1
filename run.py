@@ -1,5 +1,5 @@
 """Rebuild every pipeline output from supplied/data/raw.sql: uv run python run.py  (--fast skips the engine comparison)"""
-import hashlib, resource, subprocess, sys, time
+import hashlib, json, resource, subprocess, sys, time
 from pathlib import Path
 import nbformat
 from nbclient import NotebookClient
@@ -19,7 +19,13 @@ DB.unlink(missing_ok=True)
 t = time.perf_counter()
 subprocess.run([sys.executable, ROOT / "supplied" / "setup_db.py", "--db", DB], check=True)
 peak = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss / (1e6 if sys.platform == "darwin" else 1e3)
-print(f"00_setup_db  {time.perf_counter() - t:.1f} s  peak {peak:.0f} MB  db {DB.stat().st_size / 1e6:.1f} MB")
+raw = (ROOT / "supplied" / "data" / "raw.sql").stat().st_size / 1e6
+# its own process, so peak is the whole process. estimate: python ~15 MB + the sql text read whole + sqlite cache
+res = {"step": "00_setup_db", "seconds": round(time.perf_counter() - t, 2), "rss_peak_MB": round(peak, 2), "in_memory_MB": {"raw.sql text": round(raw, 2)},
+       "estimate_peak_MB": f"{15 + raw:.0f}-{15 + 2 * raw:.0f}", "saved_MB": {DB.name: round(DB.stat().st_size / 1e6, 2)}}
+(ROOT / "data" / "00_setup_db").mkdir(exist_ok=True)
+(ROOT / "data" / "00_setup_db" / "resources.json").write_text(json.dumps(res, indent=1))
+print(res)
 
 # engine comparison for step 1, about 3 min. --fast reuses the last result
 if "--fast" not in sys.argv or not (ROOT / "data" / "01_load" / "bench.csv").exists():

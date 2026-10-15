@@ -23,6 +23,7 @@ hash of every output. Two fresh runs give the same manifest. Timing files are le
 | File | What it is |
 |---|---|
 | `pipeline.ipynb` | the whole pipeline, one section per step, executed |
+| `helpers.py` | what every step uses: db connection, resource tracking, late rates with intervals, plot style |
 | `sql/orders.sql`, `sql/items.sql` | the SQL step 1 runs (one row per order, one row per item) |
 | `bench.py` | step 1 engine comparison: pandas, sqlite SQL, DuckDB, at 1x/3x/10x data |
 | `run.py` | the one command |
@@ -32,7 +33,7 @@ hash of every output. Two fresh runs give the same manifest. Timing files are le
 
 | Step | Input | Output (`data/`) | One row is |
 |---|---|---|---|
-| 0 setup | `supplied/data/raw.sql` | `marketplace.sqlite` | as in the raw tables |
+| 0 setup | `supplied/data/raw.sql` | `marketplace.sqlite`, `00_setup_db/resources.json` | as in the raw tables |
 | 1 load | `marketplace.sqlite` | `01_load/orders.parquet` | one order |
 | | | `01_load/items.parquet` | one order item with product + seller attributes |
 | | | `01_load/checks.csv`, `key_links.csv` | one check / one key relationship |

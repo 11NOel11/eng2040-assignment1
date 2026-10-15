@@ -14,7 +14,7 @@ draft. bullets get turned into prose. target 6-8 pages. every number below comes
   - duckdb on parquet 469 MB / 0.12 s, 1 thread 298 MB / 0.21 s
   - duckdb on the sqlite file 460 MB / 0.23 s
 - first estimate wrong: with python's sqlite3 driver sql and pandas grew the same. driver made a python object per value. adbc (arrow columns) fixed it
-- duckdb: fastest by 5-14x, but memory like pandas. streaming to parquet and a memory cap didnt help. nothing wins both -> memory over speed for a batch step
+- duckdb: 6-15x faster at 10x, but memory like pandas. streaming to parquet and a memory cap didnt help. nothing wins both -> memory over speed for a batch step
 - storage: parquet 3.29 MB vs csv 5.25 MB, keeps types
 
 ## 2. cleaning (~1.5 pages)
@@ -27,6 +27,7 @@ draft. bullets get turned into prose. target 6-8 pages. every number below comes
 - -1 photos/name/desc = placeholder -> missing. unmapped_category, 2018-02-30, sizes <= 0 -> missing
 - states ZZ/blank -> recovered from zip prefix (895 customer, 1,032 seller), 14 conflicting prefixes not used, flag column
 - 7.23 extra on 832 orders: same payment types, states, months as all orders, never its own payment row -> left, cant bias comparisons
+- installments: 929 at -1 left (payments arent predictors), 1 at 0 is valid (brief)
 - payments reconcile 14,845 -> 16,302 of 18,122 complete orders. remaining 1,820: 919 negative payment, 832 the 7.23
 - unresolved: payments (not predictors), 270 carrier before approval (flag), not_reported + 7-day shift (tested in step 3)
 - extreme delays up to 188 days kept, 14 orders over 60 days, consistent dates
@@ -56,7 +57,8 @@ draft. bullets get turned into prose. target 6-8 pages. every number below comes
 
 - `uv run python run.py`: checksums, db rebuild, bench, notebook, manifest. `--fast` skips bench
 - two runs and a fresh clone give identical output hashes
-- per step (resources_summary.csv), MB above start / estimate / seconds: load 79 / 26-39 / 0.2, clean 71 / 35-53 / 0.5, eda 64 / - / 1.5, features 54 / 48-72 / 0.2
+- per step (resources_summary.csv), MB above start / estimate / seconds: load 72 / 26-39 / 0.2, clean 66 / 35-53 / 0.6, eda 63 / 43-64 / 1.7, features 55 / 48-72 / 0.3. moves between runs (load 52-79 MB), read as sizes
+- step 0 (setup_db, own process): estimate 33-52 MB, measured ~205 MB peak, 2.2 s. emoji in reviews -> python stores the 18M-char text at 4 bytes/char (73 MB). by hand: bytes 33 MB, decode 123 MB, text read 196 MB. supplied loader, kept
 - estimate rule (2-3x data) too low for steps reading the db, 4-6x fits. likely arrow buffers + allocator, not measured separately
 - storage: db 24.4 MB, saved outputs ~13 MB, temporary ~300 MB (10x db + parquet copy, deleted)
 - kernel peak 565 MB. python 3.12.12, pandas 3.0.6, pyarrow 26, duckdb 1.5.6, sklearn 1.9.1, macOS arm64, 14 cpu, 38.7 GB
