@@ -23,12 +23,11 @@
 
 \section*{Summary}\addcontentsline{toc}{section}{Summary}
 \begin{itemize}
-  \item One command rebuilds every output from \file{raw.sql} and checks it byte for byte against a stored reference.
-  \item All 20,000 orders are kept: 16,482 get a reliable label, the rest a reason why not.
+  \item All 20,000 orders are kept: 16,482 get a reliable label, the rest a reason why not. A value is fixed only when an independent record (a \emph{witness}) shows the true value.
   \item 6.7\% of labelled orders are late (95\% interval 6.3--7.1\%). Lateness comes in waves, short estimates are late twice as often, and RJ adds the most late deliveries.
-  \item 16,482 $\times$ 72 numeric features, only from what is known at approval. Leakage checks pass.
-  \item A value is fixed only when an independent record (a \emph{witness}) shows the true value. Otherwise it becomes missing.
+  \item 16,482 $\times$ 72 numeric features, only from what is known at approval. One command rebuilds and checks every output.
 \end{itemize}
+
 \textbf{Key decisions.}
 \begin{center}\small
 \begin{tabular}{lll}
@@ -78,14 +77,13 @@ products / sellers & 11,334 / 2,071 & product\_id / seller\_id & catalogue rows 
 \begin{itemize}
   \item 0 items, payments or reviews point to a missing order.
   \item Gaps the other way stay as NULLs: 769 orders have no customer row, 142 have no items, 910 items have no product row and 893 have no seller row.
-  \item 0 duplicate orders and 0 customer records shared by two orders. The 998 repeated item rows are quantity.
-  \item Counts and totals (price total 54,446,205.77, payment total 280,524,473 centavos) are equal in the database and the output.
+  \item 0 duplicate orders, 0 customer records shared by two orders; the 998 repeated item rows are quantity. Counts and totals (price total 54,446,205.77, payment total 280,524,473 centavos) are equal in the database and the output.
 \end{itemize}
 
 \textbf{Why this is the most efficient choice.} The same table built 8 ways at 1$\times$, 3$\times$ and 10$\times$ the data, each in a fresh process, median of 3 (\file{bench.py}).
 
 \begin{figure}[htbp]\centering
-\includegraphics[width=0.9\linewidth]{01_load/engine_comparison.png}
+\includegraphics[width=0.78\linewidth]{01_load/engine_comparison.png}
 \caption{At 10$\times$ the data, SQLite SQL through ADBC needs the least memory. DuckDB is fastest but needs 2.4--4$\times$ the memory.}
 \end{figure}
 
@@ -128,7 +126,7 @@ status with spaces or capitals & 783 & strip, lowercase \\
 \textbf{Labels.} \file{delivered\_after\_estimate} = 1 if delivered after the estimated calendar date, 0 if on or before it (local clock). Only usable completed deliveries are labelled.
 
 \begin{figure}[htbp]\centering
-\includegraphics[width=0.72\linewidth]{02_clean/record_accounting.png}
+\includegraphics[width=0.6\linewidth]{02_clean/record_accounting.png}
 \caption{Every order is labelled or has one reason why not.}
 \end{figure}
 
@@ -154,8 +152,8 @@ Rates carry 95\% Wilson intervals. The textbook $p \pm 1.96\,\mathrm{se}$ fails 
   \item The typical on-time order arrives 13 days early: estimates are padded.
 \end{itemize}
 \begin{figure}[htbp]\centering
-\includegraphics[width=0.72\linewidth]{03_eda/q1_days_vs_estimate.png}\\[2pt]
-\includegraphics[width=0.72\linewidth]{03_eda/q1_late_by_month.png}
+\includegraphics[width=0.49\linewidth]{03_eda/q1_days_vs_estimate.png}\hfill
+\includegraphics[width=0.49\linewidth]{03_eda/q1_late_by_month.png}
 \caption{Lateness comes in waves, with 18\% of March 2018 orders late against 1--8\% in normal months.}
 \end{figure}
 
@@ -166,7 +164,7 @@ Rates carry 95\% Wilson intervals. The textbook $p \pm 1.96\,\mathrm{se}$ fails 
   \item An association, not a cause, but a short estimate is a useful risk signal at approval.
 \end{itemize}
 \begin{figure}[htbp]\centering
-\includegraphics[width=0.9\linewidth]{03_eda/q2_late_by_lead_time.png}
+\includegraphics[width=0.75\linewidth]{03_eda/q2_late_by_lead_time.png}
 \caption{Short estimates are late twice as often, also within the same state and month.}
 \end{figure}
 
@@ -179,8 +177,8 @@ Rates carry 95\% Wilson intervals. The textbook $p \pm 1.96\,\mathrm{se}$ fails 
   \item 951 labelled orders (6\%) have no state, 741 of them because the customer row is missing.
 \end{itemize}
 \begin{figure}[htbp]\centering
-\includegraphics[width=0.66\linewidth]{03_eda/q3_late_by_state.png}\\[2pt]
-\includegraphics[width=0.62\linewidth]{03_eda/q3_drilldown.png}
+\includegraphics[width=0.52\linewidth]{03_eda/q3_late_by_state.png}\hfill
+\includegraphics[width=0.47\linewidth]{03_eda/q3_drilldown.png}
 \caption{RJ adds the most late deliveries, mostly in the spike months and on sellers in SP.}
 \end{figure}
 
@@ -191,7 +189,7 @@ Rates carry 95\% Wilson intervals. The textbook $p \pm 1.96\,\mathrm{se}$ fails 
   \item This is one modified extract (2016--2018): these are where to look first, not proven causes.
 \end{itemize}
 \begin{figure}[htbp]\centering
-\includegraphics[width=0.72\linewidth]{03_eda/sensitivity.png}
+\includegraphics[width=0.6\linewidth]{03_eda/sensitivity.png}
 \caption{Cleaning choices barely move the late rate; the cancelled orders could move it far more.}
 \end{figure}
 
