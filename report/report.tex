@@ -138,12 +138,18 @@ status with spaces or capitals & 783 & strip, lowercase \\
   \item \textbf{Carrier pickup before approval} (270): flagged; the carrier date is not used.
   \item \textbf{\file{not\_reported}} (804) and deliveries dated exactly 7 days before approval (782 of 791 too early): unlabelled, since a fix would be a guess. Section 3 puts them back as a test.
   \item \textbf{Extreme delays} (up to 188 days, 14 orders over 60): kept, their dates are consistent.
+  \item A missing optional catalogue field (price, size, category) never removes an order: it stays missing and the order keeps its label.
 \end{itemize}
 
 %------------------------------------------------------------------
 \section{Exploratory analysis}
 
-Rates carry 95\% Wilson intervals. The textbook $p \pm 1.96\,\mathrm{se}$ fails for small groups (0 late out of 8 gives 0--0\%); Wilson gives 0--32\%~\cite{wilson}. Brown, Cai and DasGupta recommend Wilson (or Jeffreys) for small samples~\cite{brown}.
+\textbf{Why every rate has an interval, and why Wilson.}
+\begin{itemize}
+  \item Groups range from 8 orders (AP) to 6,523 (SP), so a rate alone hides how much to trust it. Every rate gets a 95\% interval.
+  \item The textbook interval $p \pm 1.96\sqrt{p(1-p)/n}$ breaks for small groups and rates near 0: 0 late out of 8 gives 0--0\%, as if 8 orders proved a state is never late. Brown, Cai and DasGupta show its coverage is erratic and that the usual rules for when it is safe are misleading~\cite{brown}.
+  \item Wilson's interval~\cite{wilson} comes from the score test, stays inside 0--100\% and stays sensible at 0 or all late: 0 out of 8 gives 0--32\%. Brown et al.\ recommend it (or Jeffreys) for small samples; for large groups the common methods give nearly the same interval, so one method serves every group.
+\end{itemize}
 
 \subsection{Q1. How often are orders late, and by how much?}
 \begin{itemize}
@@ -214,10 +220,10 @@ category & most expensive item, top 15 + other + missing & 17 \\
 \end{center}
 
 \begin{itemize}
-  \item \textbf{Representation.} Sums per order, set to missing if a part is missing. Missing stays NaN with a flag; imputing here would use future test orders. Cyclic time as sin + cos, so December sits next to January; no year. Rare categories grouped as ``other''.
+  \item \textbf{Representation.} Sums per order, set to missing if a part is missing. Missing stays NaN with a flag; imputing here would use future test orders, and imputation must be learned from training data only~\cite{pitfalls}. Cyclic time as sin + cos, so December sits next to January~\cite{cyclic}; no year. Rare categories grouped as ``other''.
   \item \textbf{Kept.} Two copies dropped: \file{est\_days\_from\_purchase} (= lead days + approval hours / 24) and \file{n\_categories} (= not category missing). The highest remaining correlation is 0.78 (weight vs volume). Each feature's meaning and source columns: \file{feature\_descriptions.csv}.
   \item \textbf{No leakage.} No source column is forbidden (checked in code). Each feature alone scores an AUC of 0.43--0.61, while the outcome \file{days\_late} as a control gets 1.0.
-  \item \textbf{Reliability.} A check model, run after step 4's resource numbers: a gradient-boosted tree~\cite{sklearn} trained on all orders before a cutoff and tested on the months after, at three cutoffs (February, April, June 2018). All features score 0.58--0.62 every time, each 95\% bootstrap interval above 0.5. Lead time alone scores 0.45--0.53, and the leak control 1.0. Modest but real signal, and no leak.
+  \item \textbf{Reliability.} A check model, run after step 4's resource numbers: a gradient-boosted tree~\cite{sklearn}, which handles NaN itself~\cite{hgb}, trained on all orders before a cutoff and tested on the months after~\cite{tscv}, at three cutoffs (February, April, June 2018). All features score 0.58--0.62 every time, each 95\% bootstrap interval~\cite{efron} above 0.5. Lead time alone scores 0.45--0.53, and the leak control 1.0. Modest but real signal, and no leak.
 \end{itemize}
 
 %------------------------------------------------------------------
@@ -232,7 +238,7 @@ category & most expensive item, top 15 + other + missing & 17 \\
 \end{enumerate}
 A fresh clone and a clean Linux container without uv both pass. Every SQL query run is saved to \file{executed\_sql.sql}. Environment: Python 3.12, pandas 3.0, pyarrow 26.
 
-\textbf{Estimated vs measured.} Memory is peak RSS above the step's start, sampled every 10 ms; it moves between runs, so the table shows the range over 5 runs. Estimates from each step's in-memory data: memory 2--3$\times$; zstd Parquet 0.2--0.35$\times$ of the tables written.
+\textbf{Estimated vs measured.} Saved storage is the Parquet and CSV files a step writes; they are also the intermediate data the next step reads. Memory is peak RSS above the step's start, sampled every 10 ms; it moves between runs, so the table shows the range over 5 runs. Estimates from each step's in-memory data: memory 2--3$\times$; zstd Parquet 0.2--0.35$\times$ of the tables written.
 
 \begin{center}\small
 \begin{tabular}{lrrrrrr}
@@ -257,9 +263,9 @@ step & MB & estimate & measured & estimate & measured & seconds \\
 
 \textbf{Limitations.} Findings describe this modified extract; associations are not causes. 18\% of orders are unlabelled, so the late rate is a lower bound.
 
-\textbf{Use of AI.} I used Claude Code (Anthropic) to suggest and test other engines (DuckDB, Polars) for the extra comparisons, to help write the LaTeX, to check for typos, and to attack the work against the rubric. I made the decisions, checked the results, and can explain each of them.
+\textbf{Use of AI.} I used Claude Code (Anthropic) to suggest and test other engines (DuckDB, Polars) for the extra comparisons, to help write the LaTeX, to check for typos, and to attack the work against the rubric. I made the decisions and checked the results.
 
-\begin{thebibliography}{10}\small
+\begin{thebibliography}{15}\small
 \bibitem{wilson} E. B. Wilson. Probable inference, the law of succession, and statistical inference. \emph{Journal of the American Statistical Association}, 22(158):209--212, 1927. \url{https://doi.org/10.1080/01621459.1927.10502953}
 \bibitem{brown} L. D. Brown, T. T. Cai, A. DasGupta. Interval estimation for a binomial proportion. \emph{Statistical Science}, 16(2):101--133, 2001. \url{https://doi.org/10.1214/ss/1009213286}
 \bibitem{eqp} SQLite. EXPLAIN QUERY PLAN. \url{https://www.sqlite.org/eqp.html}
@@ -269,6 +275,11 @@ step & MB & estimate & measured & estimate & measured & seconds \\
 \bibitem{parquet} Apache Parquet: compression. \url{https://parquet.apache.org/docs/file-format/data-pages/compression/}
 \bibitem{pep393} M. von L\"owis. PEP 393: Flexible string representation, 2010. \url{https://peps.python.org/pep-0393/}
 \bibitem{sklearn} F. Pedregosa et al. Scikit-learn: machine learning in Python. \emph{JMLR}, 12:2825--2830, 2011. \url{https://jmlr.org/papers/v12/pedregosa11a.html}
+\bibitem{efron} B. Efron, R. J. Tibshirani. \emph{An Introduction to the Bootstrap}. Chapman and Hall/CRC, 1994. \url{https://doi.org/10.1201/9780429246593}
+\bibitem{pitfalls} scikit-learn. Common pitfalls and recommended practices: data leakage. \url{https://scikit-learn.org/stable/common_pitfalls.html}
+\bibitem{cyclic} scikit-learn. Time-related feature engineering (trigonometric features). \url{https://scikit-learn.org/stable/auto_examples/applications/plot_cyclical_feature_engineering.html}
+\bibitem{hgb} scikit-learn. Histogram-based gradient boosting: missing values support. \url{https://scikit-learn.org/stable/modules/ensemble.html}
+\bibitem{tscv} scikit-learn. Cross-validation of time series data. \url{https://scikit-learn.org/stable/modules/cross_validation.html}
 \bibitem{olist} Olist. Brazilian E-Commerce Public Dataset (modified for this course), CC BY-NC-SA 4.0. \url{https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce}
 \end{thebibliography}
 \end{document}

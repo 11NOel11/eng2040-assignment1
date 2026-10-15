@@ -1,5 +1,5 @@
 """Rebuild every pipeline output from supplied/data/raw.sql and check it, or fail loudly.
-uv run --locked python run.py            everything, about 6 min
+uv run --locked python run.py            everything, 5-10 min
 uv run --locked python run.py --fast     reuse the last engine comparison
 uv run --locked python run.py --update   accept the current outputs as the new expected.sha256"""
 import hashlib, json, resource, shutil, subprocess, sys, time
@@ -41,7 +41,7 @@ res = {"step": "00_setup_db", "seconds": round(time.perf_counter() - t, 2), "rss
 (DATA / "00_setup_db" / "resources.json").write_text(json.dumps(res, indent=1))
 print(res)
 
-# engine comparison for step 1, about 5 min
+# engine comparison for step 1, 3-8 min
 if not keep:
     t = time.perf_counter()
     subprocess.run([sys.executable, ROOT / "bench.py"], check=True, stdout=subprocess.DEVNULL)

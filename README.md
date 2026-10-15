@@ -9,7 +9,7 @@ Task brief: `supplied/assignment_01_brief.pdf`.
 **With [uv](https://docs.astral.sh/uv/)** (environment pinned in `uv.lock`, Python 3.12):
 
 ```sh
-uv run --locked python run.py          # everything, about 6 min
+uv run --locked python run.py          # everything, 5-10 min
 uv run --locked python run.py --fast   # reuse the last engine comparison, under 1 min
 ```
 

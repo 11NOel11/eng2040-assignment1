@@ -1,5 +1,5 @@
 """Step 1 engine comparison: same one-row-per-order table, eight ways, at 1x/3x/10x data.
-uv run python bench.py   (about 6 min, run.py calls it, writes data/01_load/bench*.csv)"""
+uv run python bench.py   (3-8 min, run.py calls it, writes data/01_load/bench*.csv)"""
 import shutil, sqlite3, subprocess, sys
 from pathlib import Path
 import pandas as pd
