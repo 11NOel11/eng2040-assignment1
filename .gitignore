@@ -12,3 +12,11 @@ supplied/data/raw.sql
 
 # pipeline outputs, rebuilt by run.py
 data/
+
+# latex build files
+report/*.aux
+report/*.log
+report/*.out
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz

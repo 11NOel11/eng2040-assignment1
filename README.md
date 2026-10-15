@@ -26,7 +26,7 @@ hash of every output. Two fresh runs give the same manifest. Timing files are le
 | `sql/orders.sql`, `sql/items.sql` | the SQL step 1 runs (one row per order, one row per item) |
 | `bench.py` | step 1 engine comparison: pandas, sqlite SQL (two drivers), DuckDB, Polars, at 1x/3x/10x data |
 | `run.py` | the one command |
-| `report.md` | report draft |
+| `report/report.pdf` | the report (LaTeX source `report/report.tex`, figures read from `data/`) |
 
 ## Steps
 
@@ -79,5 +79,5 @@ Notebook sections are in `pipeline.ipynb`; files are under `data/`.
 | 5: one command reproduces every step | `run.py`, `data/manifest.sha256` (fresh clone gives the same hashes) |
 | 5: estimated vs measured memory, storage, intermediate data, runtime per step | step 5, `05_resources/resources_summary.csv`, `data/0*/resources.json` |
 | 5: chart data, code, executed SQL, environment, checks | `03_eda/*.csv`, notebook, `sql/`, `05_resources/environment.json`, `01_load/checks.csv` |
-| 5: 6-8 page report | `report.md` (draft) |
+| 5: 6-8 page report | `report/report.pdf` |
 
